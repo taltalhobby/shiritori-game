@@ -708,9 +708,11 @@
             <div class="tempo-buttons">
                 <button class="tempo-btn blue" onclick="startGame(80)">ゆっくり</button>
                 <button class="tempo-btn green" onclick="startGame(120)">ふつう</button>
-                <button class="tempo-btn orange" onclick="startGame(160)">はやい</button>
-                <button class="tempo-btn red" onclick="startGame(200)">げきはや</button>
-                <button class="tempo-btn black" onclick="startGame(300)">おにはや</button>
+                <button id="btn-fast" class="tempo-btn orange" onclick="startGame(160)">はやい</button>
+                <button id="btn-gekihaya" class="tempo-btn red" onclick="startGame(200)"
+                    style="display: none;">げきはや</button>
+                <button id="btn-onihaya" class="tempo-btn black" onclick="startGame(300)"
+                    style="display: none;">おにはや</button>
             </div>
         </div>
 
@@ -781,7 +783,7 @@
         <!-- 結果画面 -->
         <div id="result-overlay" class="result-overlay">
             <div id="result-content"></div>
-            <button class="retry-btn" onclick="location.reload()">🔄 もう一度遊ぶ</button>
+            <button class="retry-btn" onclick="goToTitle()">🔄 もう一度遊ぶ</button>
         </div>
     </div>
 
@@ -909,6 +911,11 @@
         let choicesShown = false; // 選択肢が表示されたかどうか
         let cycleCount = 0; // コード進行用サイクルカウンター
         let isFirstTurn = true; // 1ターン目かどうか（しっぽの向き制御用）
+        let currentBPM = 120; // 現在のゲームのBPM（アンロック判定用）
+
+        // 難易度アンロック状態（セッション中のみ有効）
+        let unlockedGekihaya = false;
+        let unlockedOnihaya = false;
 
         // ========== ゲーム画像 ==========
         const NIBU_IMAGES = {
@@ -1773,6 +1780,7 @@
 
             // テンポ設定（引数から受け取り）
             BPM = bpm || 120;
+            currentBPM = BPM; // アンロック判定用に保存
             BEAT_DURATION = 60000 / BPM;
 
             const allWords = Object.values(wordDict).flat().filter(w => !w.endsWith('ん'));
@@ -1786,6 +1794,10 @@
             pendingResult = null;
             cycleCount = 0; // コード進行リセット
             isFirstTurn = true; // 1ターン目のフラグをリセット
+
+            // にぶちゃん画像を待機状態にリセット
+            setNibuImage('waiting');
+            setNibuBounce(false);
 
             document.getElementById('title-screen').style.display = 'none';
             document.getElementById('game-screen').style.display = 'flex';
@@ -1823,6 +1835,17 @@
 
             if (isWin) {
                 playFanfare(); // クリア画面でファンファーレ
+
+                // 難易度アンロック処理
+                if (currentBPM >= 160 && !unlockedGekihaya) {
+                    unlockedGekihaya = true;
+                    document.getElementById('btn-gekihaya').style.display = '';
+                }
+                if (currentBPM >= 200 && !unlockedOnihaya) {
+                    unlockedOnihaya = true;
+                    document.getElementById('btn-onihaya').style.display = '';
+                }
+
                 content.innerHTML = `
                 <img src="${GAME_IMAGES.clear}" class="result-img">
                 <div class="result-emoji">🎉</div>
