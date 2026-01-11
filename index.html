@@ -671,8 +671,8 @@
         }
 
         .result-img {
-            max-width: 80%;
-            max-height: 200px;
+            max-width: 90%;
+            max-height: 300px;
             border-radius: 12px;
         }
 
@@ -797,7 +797,7 @@
             "お": ["おにぎり", "おおかみ", "おもちゃ", "おやつ", "おおくわがた", "おんせん"],
             "か": ["かすが", "からす", "かさ", "かめ", "かた", "かふぇいん"],
             "き": ["きのこ", "きくらげ", "きつね", "きんぎょ", "きた", "きゅん"],
-            "く": ["くるま", "くじら", "くつ", "くり", "くつした", "くっしょん"],
+            "く": ["くるま", "くじら", "くつぞこ", "くり", "くつした", "くっしょん"],
             "け": ["けんだま", "けーき", "けしごむ", "けんどう", "けしょういた", "けいかん"],
             "こ": ["こあら", "こんぶ", "こま", "ことり", "こねくたー", "こばん"],
             "さ": ["さいたま", "さる", "さくら", "さかな", "さすまた", "さいばん"],
@@ -880,7 +880,12 @@
             "いた": "たるたるちきん",
             // すいかチェーン
             "すいか": "かた",
-            "かた": "たるたるちきん"
+            "かた": "たるたるちきん",
+            // === 負けコンボ ===
+            // うさぎチェーン（ぎんなんで終わり）
+            "うさぎ": "ぎんなん",
+            // くつぞこチェーン（こばんで終わり）
+            "くつぞこ": "こばん"
         };
 
         // 特定の文字から始まるべきコンボ単語
@@ -891,10 +896,16 @@
             "ど": "どーなつ",
             "つ": "つみき",    // 途中からでも
             "き": "きた",      // 途中からでも
-            "う": "うた",
+            "う": "うた",      // 勝ちコンボ（負けコンボのうさぎも選択肢に出る）
             "い": "いた",
-            "す": "すいか",      // すいかチェーン
+            "す": "すいか",    // すいかチェーン
             "か": "かた"       // 途中からでも
+        };
+
+        // 負けコンボスターター（勝ちコンボと同じ文字から始まるが、負けに導く）
+        const loseComboStarters = {
+            "う": "うさぎ",    // う→うさぎ→ぎんなん（負け）
+            "く": "くつぞこ"  // く→くつぞこ→こばん（負け）
         };
 
         // ========== ゲーム状態 ==========
@@ -931,7 +942,7 @@
         // その他の画像
         const GAME_IMAGES = {
             gameOver: "https://github.com/taltalhobby/shiritori-game/blob/main/images/11-kasuga-seal.png?raw=true",
-            clear: "https://pbs.twimg.com/media/GuvWJMjX0AAtZfk.jpg"
+            clear: "https://github.com/taltalhobby/shiritori-game/blob/main/images/91-tartarchicken-high-quality.png?raw=true"
         };
 
         let clapToggle = false; // 拍手画像切り替え用
@@ -1338,16 +1349,29 @@
                 if (!correctPicks.includes(t)) correctPicks.push(t);
             }
 
-            // 不正解選択肢を2つ追加
-            const allWords = Object.values(wordDict).flat();
+            // 不正解選択肢を準備
             let incorrectPicks = [];
+
+            // 負けコンボスターターがあれば優先的に追加
+            if (loseComboStarters[lastChar] && !correctPicks.includes(loseComboStarters[lastChar])) {
+                incorrectPicks.push(loseComboStarters[lastChar]);
+            }
+
+            // 負けコンボチェーンの次の単語があれば追加
+            if (combo[currentWord] && !correctPicks.includes(combo[currentWord]) && !incorrectPicks.includes(combo[currentWord])) {
+                // この場合はcorrectPicksに入っているはずなのでスキップ
+            }
+
+            // 残りの不正解選択肢をランダムに追加
+            const allWords = Object.values(wordDict).flat();
             while (incorrectPicks.length < 2) {
                 const wrong = allWords[Math.floor(Math.random() * allWords.length)];
                 // 正解にならないことを確認
                 const startsWithLastChar = wrong.startsWith(lastChar) ||
                     (lastChar === "ち" && wrong.startsWith("ちゃ"));
                 const isComboWord = wrong === combo[currentWord] || wrong === comboStarters[lastChar];
-                if (!startsWithLastChar && !isComboWord && !incorrectPicks.includes(wrong) && !correctPicks.includes(wrong)) {
+                const isLoseComboWord = wrong === loseComboStarters[lastChar];
+                if (!startsWithLastChar && !isComboWord && !isLoseComboWord && !incorrectPicks.includes(wrong) && !correctPicks.includes(wrong)) {
                     incorrectPicks.push(wrong);
                 }
             }
@@ -1358,7 +1382,8 @@
         function checkAnswer(selected) {
             const lastChar = getLastChar(currentWord);
 
-            if (selected === "たるたるちきん") {
+            // 「たるたるちきん」は「た」で始まるので、lastCharが「た」の時のみゴール
+            if (selected === "たるたるちきん" && lastChar === "た") {
                 return { correct: true, isGoal: true };
             }
 
@@ -1848,7 +1873,6 @@
 
                 content.innerHTML = `
                 <img src="${GAME_IMAGES.clear}" class="result-img">
-                <div class="result-emoji">🎉</div>
                 <div class="result-text win">タルタルチキン！</div>
                 <div class="result-score">ターン: ${score}</div>
             `;
