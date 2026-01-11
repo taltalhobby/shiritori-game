@@ -1,0 +1,1881 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>なんでもタルタルチキンにするゲーム</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 山吹色系カラーパレット */
+        :root {
+            --sky-light: #fff8e1;
+            /* 淡い山吹色 */
+            --sky: #ffcc80;
+            /* 薄い山吹色 */
+            --blue: #ffa726;
+            /* 山吹色 */
+            --blue-dark: #f57c00;
+            /* 濃い山吹色 */
+            --white: #ffffff;
+            --gray-light: #fff3e0;
+            --text-dark: #5d4037;
+            /* 茶系テキスト */
+            --text-light: #8d6e63;
+            /* 薄茶テキスト */
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Hiragino Sans', sans-serif;
+            background-color: var(--sky-light);
+            /* 直角三角形の幾何学模様：方眼＋左下から右上への対角線 */
+            background-image: url("data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 30 L30 30 L30 0' fill='none' stroke='%23ffffff' stroke-width='1'/%3E%3Cpath d='M0 30 L30 0' fill='none' stroke='%23ffffff' stroke-width='1'/%3E%3C/svg%3E");
+            background-size: 30px 30px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .game-container {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(66, 165, 245, 0.15);
+            width: 95%;
+            max-width: 480px;
+            text-align: center;
+            position: relative;
+        }
+
+        /* タイトル画面 */
+        .title-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2.4rem;
+        }
+
+        .game-title {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: var(--blue-dark);
+        }
+
+        .title-character {
+            width: 144px;
+            height: 144px;
+            background: var(--sky-light);
+            border: 5px solid var(--sky);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3.6rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .start-btn {
+            padding: 1.2rem 3.6rem;
+            font-size: 1.56rem;
+            font-weight: bold;
+            color: var(--white);
+            background: var(--blue);
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .start-btn:hover {
+            background: var(--blue-dark);
+            transform: translateY(-2px);
+        }
+
+        /* テンポ選択ボタン */
+        .tempo-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            align-items: center;
+            margin: 0.6rem 0;
+        }
+
+        .tempo-btn {
+            padding: 0.58rem 2.4rem;
+            font-size: 1.14rem;
+            font-weight: bold;
+            color: var(--white);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 168px;
+        }
+
+        .tempo-btn.blue {
+            background: #42a5f5;
+        }
+
+        .tempo-btn.blue:hover {
+            background: #1e88e5;
+        }
+
+        .tempo-btn.green {
+            background: #4caf50;
+        }
+
+        .tempo-btn.green:hover {
+            background: #388e3c;
+        }
+
+        .tempo-btn.orange {
+            background: #ff9800;
+        }
+
+        .tempo-btn.orange:hover {
+            background: #f57c00;
+        }
+
+        .tempo-btn.red {
+            background: #f44336;
+        }
+
+        .tempo-btn.red:hover {
+            background: #d32f2f;
+        }
+
+        .tempo-btn.black {
+            background: #333;
+        }
+
+        .tempo-btn.black:hover {
+            background: #111;
+        }
+
+        .tempo-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* ゲーム画面 */
+        .game-screen {
+            display: none;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1rem;
+            color: var(--text-light);
+        }
+
+        .back-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(200, 215, 230, 0.5);
+            border: 2px solid var(--sky);
+            color: var(--text-light);
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            background: rgba(180, 200, 220, 0.7);
+            border-color: var(--blue);
+        }
+
+        .score {
+            font-weight: bold;
+            color: var(--blue-dark);
+        }
+
+        /* キャラクターエリア（左右配置） */
+        .characters-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 0 1rem;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 1;
+            /* 吹き出しエリア（z-index: 10）より後ろに */
+        }
+
+        .character-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .character {
+            width: 80px;
+            height: 100px;
+            background: var(--blue);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--white);
+            transition: transform 0.1s;
+        }
+
+        /* にぶちゃん画像コンテナ（全画像を重ねて配置） */
+        .character-img-container {
+            position: relative;
+            width: 210px;
+            height: 140px;
+            margin-bottom: -50px;
+            z-index: 1;
+            overflow: visible;
+            transform: translateY(-8px);
+            /* デフォルトは上に */
+        }
+
+        /* 裏拍で下に戻す */
+        .character-img-container.down {
+            transform: translateY(0);
+        }
+
+        .nibu-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+            opacity: 0;
+            transition: opacity 0.05s;
+        }
+
+        /* clap1は表拍（下位置）、clap2は裏拍（上位置=デフォルト） */
+        .nibu-img[data-state="clap1"] {
+            transform: translateY(8px);
+        }
+
+        .nibu-img.active {
+            opacity: 1;
+        }
+
+        /* カウントダウンテロップ */
+        .countdown-overlay {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 4rem;
+            font-weight: 900;
+            color: var(--blue-dark);
+            text-shadow:
+                -3px -3px 0 #fff,
+                3px -3px 0 #fff,
+                -3px 3px 0 #fff,
+                3px 3px 0 #fff;
+            z-index: 20;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+
+        .countdown-overlay.show {
+            opacity: 1;
+            animation: countPop 0.3s ease-out;
+        }
+
+        @keyframes countPop {
+            0% {
+                transform: translateX(-50%) scale(0.5);
+                opacity: 0;
+            }
+
+            50% {
+                transform: translateX(-50%) scale(1.2);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateX(-50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .character-name {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        /* 吹き出しと時間バーエリア */
+        .speech-time-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            margin: 0.5rem 0;
+            position: relative;
+            z-index: 10;
+            /* 画像コンテナより確実に前面に */
+        }
+
+        .speech-box {
+            background: var(--white);
+            border: 3px solid var(--blue);
+            border-radius: 16px;
+            padding: 0.5rem 0.6rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-dark);
+            /* 画面幅いっぱいに伸ばす（flexで均等分割） */
+            flex: 1;
+            /* 高さは固定 */
+            height: 48px;
+            min-height: 48px;
+            text-align: center;
+            position: relative;
+            box-sizing: border-box;
+            overflow: hidden;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+            /* キャラクター画像の前面に */
+        }
+
+        .speech-box.left {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            border-right: none;
+            justify-content: flex-end;
+            padding-right: 20px;
+            /* マイナスマージン分を補償して文字位置を維持 */
+            margin-right: -20px;
+            /* 中央円の下に伸ばす */
+        }
+
+        .speech-box.right {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            border-left: none;
+            justify-content: flex-start;
+            padding-left: 20px;
+            /* マイナスマージン分を補償して文字位置を維持 */
+            margin-left: -20px;
+            /* 中央円の下に伸ばす */
+        }
+
+        /* ホワイトウォッシュ（薄くする）効果 - 背景は不透明、文字とボーダーを薄く */
+        .speech-box.whitewash {
+            background: #fff;
+            border-color: #cce0f0;
+            color: #bbb;
+            transition: all 0.2s;
+        }
+
+        .center-indicator {
+            position: relative;
+            z-index: 15;
+            /* 吹き出し（z-index: 5）より前面に */
+            flex-shrink: 0;
+        }
+
+        .next-char-circle {
+            width: 72px;
+            height: 72px;
+            background: var(--white);
+            border: 4px solid var(--blue);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.4rem;
+            font-weight: bold;
+            color: var(--text-dark);
+            position: relative;
+        }
+
+        /* 中央円の補助文字（小さい「ゃ」「ー」など） */
+        .next-char-circle .sub-char {
+            position: absolute;
+            font-size: 1.35rem;
+            font-weight: bold;
+            bottom: -3px;
+            right: 10px;
+            text-shadow:
+                -2px -2px 0 #fff,
+                2px -2px 0 #fff,
+                -2px 2px 0 #fff,
+                2px 2px 0 #fff,
+                0 -2px 0 #fff,
+                0 2px 0 #fff,
+                -2px 0 0 #fff,
+                2px 0 0 #fff;
+        }
+
+        /* 吹き出しのしっぽ（上向き） */
+        .next-char-circle::before {
+            content: '';
+            position: absolute;
+            top: -14px;
+            width: 0;
+            height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-bottom: 14px solid var(--blue);
+            transition: left 0.2s, right 0.2s;
+        }
+
+        .next-char-circle::after {
+            content: '';
+            position: absolute;
+            top: -9px;
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 12px solid var(--white);
+            transition: left 0.2s, right 0.2s;
+        }
+
+        /* しっぽが左（提示人）を向く */
+        .next-char-circle.tail-left::before {
+            left: 10px;
+            right: auto;
+        }
+
+        .next-char-circle.tail-left::after {
+            left: 12px;
+            right: auto;
+        }
+
+        /* しっぽが右（にぶちゃん）を向く */
+        .next-char-circle.tail-right::before {
+            right: 10px;
+            left: auto;
+        }
+
+        .next-char-circle.tail-right::after {
+            right: 12px;
+            left: auto;
+        }
+
+        /* 楕円枠の残り時間バー（左右から中央へ） */
+        .time-bar-frame {
+            width: 90%;
+            height: 12px;
+            margin: 0.5rem auto;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .time-bar-half {
+            height: 100%;
+            background: #4caf50;
+            transition: width 0.1s linear;
+        }
+
+        .time-bar-half.left {
+            border-radius: 6px 0 0 6px;
+        }
+
+        .time-bar-half.right {
+            border-radius: 0 6px 6px 0;
+        }
+
+        .time-bar-half.warning {
+            background: #ff9800;
+        }
+
+        .time-bar-half.danger {
+            background: #f44336;
+        }
+
+        /* 正解／不正解マーク */
+        .judgment-mark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4rem;
+            font-weight: 900;
+            display: none;
+            z-index: 20;
+            /* 円（z-index: 15）より前面に */
+            text-shadow:
+                -3px -3px 0 #fff,
+                3px -3px 0 #fff,
+                -3px 3px 0 #fff,
+                3px 3px 0 #fff,
+                0 -3px 0 #fff,
+                0 3px 0 #fff,
+                -3px 0 0 #fff,
+                3px 0 0 #fff;
+        }
+
+        .judgment-mark.correct {
+            color: #f44336;
+        }
+
+        .judgment-mark.wrong {
+            color: #2196f3;
+        }
+
+        .judgment-mark.show {
+            display: block;
+            animation: popIn 0.2s ease-out;
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+            }
+
+            70% {
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        /* 選択肢 */
+        .choices {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: nowrap;
+        }
+
+        .choice-btn {
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+            padding: 0.75rem 0.6rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-dark);
+            background: var(--white);
+            border: 3px solid var(--sky);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.15s;
+            /* 「たるたるちきん」が入る固定高さ（1.5倍） */
+            height: 240px;
+            min-height: 240px;
+            max-height: 240px;
+            text-align: center;
+            /* 縦方向の中央線を揃える */
+            box-sizing: border-box;
+        }
+
+        .choice-btn:hover:not(:disabled):not(.selected) {
+            background: var(--sky-light);
+            border-color: var(--sky);
+        }
+
+        .choice-btn.selected {
+            background: var(--blue);
+            color: var(--white);
+            border-color: var(--blue);
+        }
+
+        /* 選択されていないdisabledボタンのみ薄くする */
+        .choice-btn:disabled:not(.selected) {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 選択されたボタンはdisabledでも原色のまま */
+        .choice-btn.selected:disabled {
+            opacity: 1;
+            cursor: default;
+        }
+
+        .choice-btn .first-char {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+
+        .choice-btn .rest-chars {
+            font-size: 1.2rem;
+        }
+
+        /* 結果表示 */
+        .result-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--white);
+            border-radius: 20px;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 1.5rem;
+            z-index: 10;
+        }
+
+        .result-emoji {
+            font-size: 5rem;
+        }
+
+        .result-text {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--blue-dark);
+        }
+
+        .result-text.win {
+            color: #ff7043;
+        }
+
+        .result-text.lose {
+            color: var(--text-light);
+        }
+
+        .result-score {
+            font-size: 1.2rem;
+            color: var(--text-light);
+        }
+
+        .result-img {
+            max-width: 80%;
+            max-height: 200px;
+            border-radius: 12px;
+        }
+
+        .retry-btn {
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--white);
+            background: var(--blue);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .retry-btn:hover {
+            background: var(--blue-dark);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="game-container">
+        <!-- タイトル画面 -->
+        <div id="title-screen" class="title-screen">
+            <h1 class="game-title">なんでも<br>タルタルチキンに<br>するゲーム</h1>
+            <div class="title-character">🎤</div>
+            <p style="color: var(--text-light); font-size: 1.14rem;">
+                しりとりでタルタルチキンに導こう！
+            </p>
+            <div class="tempo-buttons">
+                <button class="tempo-btn blue" onclick="startGame(80)">ゆっくり</button>
+                <button class="tempo-btn green" onclick="startGame(120)">ふつう</button>
+                <button class="tempo-btn orange" onclick="startGame(160)">はやい</button>
+                <button class="tempo-btn red" onclick="startGame(200)">げきはや</button>
+                <button class="tempo-btn black" onclick="startGame(300)">おにはや</button>
+            </div>
+        </div>
+
+        <!-- ゲーム画面 -->
+        <div id="game-screen" class="game-screen">
+            <div class="header">
+                <button class="back-btn" onclick="goToTitle()" title="スタートに戻る">⬅</button>
+                <span></span>
+                <span class="score">ターン: <span id="score">0</span></span>
+            </div>
+
+            <!-- 左右キャラクター配置 -->
+            <div class="characters-row">
+                <div class="character-wrapper">
+                    <div id="presenter-char" class="character">提案人</div>
+                    <span class="character-name"></span>
+                </div>
+                <div class="character-wrapper">
+                    <div id="nibu-char-container" class="character-img-container">
+                        <img class="nibu-img active" data-state="waiting"
+                            src="https://github.com/taltalhobby/shiritori-game/blob/main/images/01-nibu-wait.png?raw=true"
+                            alt="待機">
+                        <img class="nibu-img" data-state="request"
+                            src="https://github.com/taltalhobby/shiritori-game/blob/main/images/02-nibu-listen.png?raw=true"
+                            alt="リクエスト">
+                        <img class="nibu-img" data-state="clap1"
+                            src="https://github.com/taltalhobby/shiritori-game/blob/main/images/03-nibu-clap1.png?raw=true"
+                            alt="拍手1">
+                        <img class="nibu-img" data-state="clap2"
+                            src="https://github.com/taltalhobby/shiritori-game/blob/main/images/04-nibu-clap2.png?raw=true"
+                            alt="拍手2">
+                        <img class="nibu-img" data-state="correct"
+                            src="https://github.com/taltalhobby/shiritori-game/blob/main/images/05-nibu-correct.png?raw=true"
+                            alt="正解">
+                        <img class="nibu-img" data-state="goal"
+                            src="https://github.com/taltalhobby/shiritori-game/blob/main/images/06-nibu-tartarchicken.png?raw=true"
+                            alt="タルタルチキン">
+                        <img class="nibu-img" data-state="fail"
+                            src="https://github.com/taltalhobby/shiritori-game/blob/main/images/07-nibu-fail.png?raw=true"
+                            alt="失敗">
+                    </div>
+                    <span class="character-name"></span>
+                </div>
+            </div>
+
+            <!-- カウントダウンテロップ -->
+            <div id="countdown-overlay" class="countdown-overlay"></div>
+
+            <!-- 吹き出し＋次の頭文字 -->
+            <div class="speech-time-container">
+                <div id="speech-left" class="speech-box left">---</div>
+                <div class="center-indicator">
+                    <div id="next-char" class="next-char-circle"></div>
+                </div>
+                <div id="speech-right" class="speech-box right">---</div>
+                <div id="judgment-mark" class="judgment-mark"></div>
+            </div>
+
+            <!-- 残り時間バー（左右から中央へ） -->
+            <div class="time-bar-frame">
+                <div id="time-bar-left" class="time-bar-half left" style="width: 50%;"></div>
+                <div id="time-bar-right" class="time-bar-half right" style="width: 50%;"></div>
+            </div>
+
+            <div id="choices" class="choices"></div>
+        </div>
+
+        <!-- 結果画面 -->
+        <div id="result-overlay" class="result-overlay">
+            <div id="result-content"></div>
+            <button class="retry-btn" onclick="location.reload()">🔄 もう一度遊ぶ</button>
+        </div>
+    </div>
+
+    <script>
+        // ========== 単語辞書 ==========
+        const wordDict = {
+            "あ": ["あざとかわいい", "あひる", "あめ", "あいす", "あした", "あんぱん"],
+            "い": ["いか", "いぬ", "いちご", "いす", "いた", "いんかん"],
+            "う": ["うさぎ", "うし", "うみ", "うちわ", "うた", "うどん"],
+            "え": ["えだまめ", "えんぴつ", "えび", "えかき", "えんのした", "えきでん"],
+            "お": ["おにぎり", "おおかみ", "おもちゃ", "おやつ", "おおくわがた", "おんせん"],
+            "か": ["かすが", "からす", "かさ", "かめ", "かた", "かふぇいん"],
+            "き": ["きのこ", "きくらげ", "きつね", "きんぎょ", "きた", "きゅん"],
+            "く": ["くるま", "くじら", "くつ", "くり", "くつした", "くっしょん"],
+            "け": ["けんだま", "けーき", "けしごむ", "けんどう", "けしょういた", "けいかん"],
+            "こ": ["こあら", "こんぶ", "こま", "ことり", "こねくたー", "こばん"],
+            "さ": ["さいたま", "さる", "さくら", "さかな", "さすまた", "さいばん"],
+            "し": ["しか", "しお", "しじみ", "ししゃも", "した", "しんぶん"],
+            "す": ["すいか", "すずめ", "すな", "すてーき", "すがた", "すうぇーでん"],
+            "せ": ["せみ", "せんせい", "せんたく", "せなか", "せった", "せっけん"],
+            "そ": ["そんなことないよ", "そら", "そぼろ", "そふと", "そなた", "そろばん"],
+            "た": ["たぬき", "たいこ", "たまご", "たいよう", "たなばた", "たるたるちきん"],
+            "ち": ["ちーず", "ちきゅう", "ちょうちょ", "ちかてつ", "ちゃくうた", "ちきんなんばん"],
+            "つ": ["つくえ", "つばめ", "つみき", "つり", "つた", "つなかん"],
+            "て": ["てがみ", "てれび", "てんとうむし", "てんき", "てがた", "てっけん"],
+            "と": ["とら", "とけい", "とちぎ", "とうもろこし", "としした", "とうめいかん"],
+            "な": ["なす", "なっとう", "なみ", "なかま", "なた", "ないろん"],
+            "に": ["にじ", "にわとり", "にんぎょう", "にゅーす", "にいがた", "にぶちゃん"],
+            "ぬ": ["ぬりえ", "ぬま", "ぬけがら", "ぬーどる", "ぬまた", "ぬらりひょん"],
+            "ね": ["ねこ", "ねくたい", "ねずみ", "ねいろ", "ねた", "ねぎらーめん"],
+            "の": ["のり", "のーと", "のみもの", "のど", "のきした", "のーとぱそこん"],
+            "は": ["はんばーがー", "はな", "はさみ", "はし", "はむすたー", "はくぶつかん"],
+            "ひ": ["ひつじ", "ひこうき", "ひまわり", "ひかげ", "ひなた", "ひがしにほん"],
+            "ふ": ["ふね", "ふで", "ふく", "ふうとう", "ふた", "ふうせん"],
+            "へ": ["へび", "へや", "へそ", "へるめっと", "へりこぷたー", "へんしん"],
+            "ほ": ["ほし", "ほうれんそう", "ほうせき", "ほね", "ほっぺた", "ほん"],
+            "ま": ["まっちゃ", "まつり", "まくら", "まめ", "まんた", "まらそん"],
+            "み": ["みやざき", "みず", "みみずく", "みらい", "みかた", "みかん"],
+            "む": ["むし", "むぎ", "むすめ", "むら", "むないた", "むせん"],
+            "め": ["めだか", "めがね", "めいろ", "めいし", "めった", "めろん"],
+            "も": ["もも", "もち", "もぐら", "もり", "もちうた", "もっきん"],
+            "や": ["やぎ", "やま", "やさしいかんけい", "やね", "やかた", "やかん"],
+            "ゆ": ["ゆき", "ゆびわ", "ゆうれい", "ゆめ", "ゆかた", "ゆうびん"],
+            "よ": ["よっと", "よる", "ようかい", "ようふく", "よるがた", "よじげん"],
+            "ら": ["らっぱ", "らくだ", "らじお", "らんどせる", "らいたー", "らいおん"],
+            "り": ["りんご", "りす", "りゅっく", "りきし", "りゅうけつざた", "りぼん"],
+            "る": ["るーぺ", "るーる", "るびー", "るーれっと", "るたー", "るふらん"],
+            "れ": ["れいぞうこ", "れんげ", "れんず", "れたす", "れたー", "れんこん"],
+            "ろ": ["ろけっと", "ろば", "ろうそく", "ろーぷ", "ろかた", "ろんどん"],
+            "わ": ["わんちょいす", "わかばやし", "わたあめ", "わに", "わた", "わさんぼん"],
+            "が": ["がらす", "がっこう", "がーぜ", "がか", "がらすいた", "がそりん"],
+            "ぎ": ["ぎゅうにゅう", "ぎんが", "ぎょうざ", "ぎゅうにく", "ぎたー", "ぎんなん"],
+            "ぐ": ["ぐみ", "ぐんて", "ぐらす", "ぐんま", "ぐんじでーた", "ぐらたん"],
+            "げ": ["げーむ", "げんき", "げか", "げんまい", "げた", "げーせん"],
+            "ご": ["ごりら", "ごむ", "ごるふ", "ごま", "ごぶさた", "ごはん"],
+            "ざ": ["ざっし", "ざらめ", "ざりがに", "ざせき", "ざった", "ざぶとん"],
+            "じ": ["じこう", "じてんしゃ", "じしゃく", "じしょ", "じべた", "じかん"],
+            "ず": ["ずこう", "ずけい", "ずわいがに", "ずんだ", "ずいた", "ずぼん"],
+            "ぜ": ["ぜりー", "ぜんりき", "ぜんまい", "ぜろ", "ぜにがた", "ぜっぴん"],
+            "ぞ": ["ぞう", "ぞうり", "ぞんび", "ぞうぜい", "ぞろあすたー", "ぞうきん"],
+            "だ": ["だんご", "だいや", "だるま", "だんす", "だーくまたー", "だいこん"],
+            "で": ["でんしゃ", "でんわ", "でんき", "でぱーと", "でぃれくたー", "でじたるぺん"],
+            "ど": ["どれみそらしど", "どーなつ", "どあ", "どんぐり", "どくたー", "どらごん"],
+            "ば": ["ばなな", "ばいく", "ばけつ", "ばら", "ばった", "ばくだん"],
+            "び": ["びーだま", "びーる", "びわ", "びでお", "びたー", "びん"],
+            "ぶ": ["ぶし", "ぶどう", "ぶらんこ", "ぶろっこりー", "ぶた", "ぶどうぱん"],
+            "べ": ["べんとう", "べると", "べんち", "べっど", "べにやいた", "べーこん"],
+            "ぼ": ["ぼーる", "ぼうし", "ぼくじょう", "ぼんおどり", "ぼんぼりうた", "ぼたん"],
+            "ぱ": ["ぱんだ", "ぱせり", "ぱらそる", "ぱとかー", "ぱすた", "ぱそこん"],
+            "ぴ": ["ぴあの", "ぴんく", "ぴすとる", "ぴざ", "ぴーなつばたー", "ぴーまん"],
+            "ぷ": ["ぷれぜんと", "ぷーる", "ぷらぐ", "ぷろれす", "ぷりんたー", "ぷりん"],
+            "ぺ": ["ぺーぱー", "ぺんき", "ぺっと", "ぺだる", "ぺいんたー", "ぺんぎん"],
+            "ぽ": ["ぽすと", "ぽてと", "ぽんぷ", "ぽけっと", "ぽすたー", "ぽっぷこーん"],
+            "ちゃ": ["ちゃば", "ちゃいろ", "ちゃしつ", "ちゃんぽん"]
+        };
+
+        // コンボチェーン定義
+        // ま→まっちゃ→ちゃば→ばった→た→たるたるちきん
+        // ど/つ/き→どーなつ→つみき→きた→た→たるたるちきん
+        // う→うた→た→たるたるちきん
+        // い→いた→た→たるたるちきん
+        const combo = {
+            // まっちゃチェーン
+            "まっちゃ": "ちゃば",
+            "ちゃば": "ばった",
+            "ばった": "たるたるちきん",
+            // どーなつチェーン
+            "どーなつ": "つみき",
+            "つみき": "きた",
+            "きた": "たるたるちきん",
+            // うたチェーン
+            "うた": "たるたるちきん",
+            // いたチェーン
+            "いた": "たるたるちきん",
+            // すいかチェーン
+            "すいか": "かた",
+            "かた": "たるたるちきん"
+        };
+
+        // 特定の文字から始まるべきコンボ単語
+        const comboStarters = {
+            "ま": "まっちゃ",
+            "ち": "ちゃば",    // 途中からでも
+            "ば": "ばった",    // 途中からでも
+            "ど": "どーなつ",
+            "つ": "つみき",    // 途中からでも
+            "き": "きた",      // 途中からでも
+            "う": "うた",
+            "い": "いた",
+            "す": "すいか",      // すいかチェーン
+            "か": "かた"       // 途中からでも
+        };
+
+        // ========== ゲーム状態 ==========
+        let currentWord = "";
+        let score = 0;
+        let taVisitCount = 0; // 互換性のため残すが使用しない
+        let selectedWord = null;
+        let isPlaying = false;
+        let currentBeat = 0; // 1-8 (2小節)
+        let beatInterval = null;
+        let gamePhase = "intro"; // "intro" or "select" or "answer"
+        let timeBarInterval = null;
+        let timeBarWidth = 100;
+        let choicesShown = false; // 選択肢が表示されたかどうか
+        let cycleCount = 0; // コード進行用サイクルカウンター
+        let isFirstTurn = true; // 1ターン目かどうか（しっぽの向き制御用）
+
+        // ========== ゲーム画像 ==========
+        const NIBU_IMAGES = {
+            waiting: "https://github.com/taltalhobby/shiritori-game/blob/main/images/01-nibu-wait.png?raw=true",
+            request: "https://github.com/taltalhobby/shiritori-game/blob/main/images/02-nibu-listen.png?raw=true",
+            clap1: "https://github.com/taltalhobby/shiritori-game/blob/main/images/03-nibu-clap1.png?raw=true",
+            clap2: "https://github.com/taltalhobby/shiritori-game/blob/main/images/04-nibu-clap2.png?raw=true",
+            correct: "https://github.com/taltalhobby/shiritori-game/blob/main/images/05-nibu-correct.png?raw=true",
+            goal: "https://github.com/taltalhobby/shiritori-game/blob/main/images/06-nibu-tartarchicken.png?raw=true",
+            fail: "https://github.com/taltalhobby/shiritori-game/blob/main/images/07-nibu-fail.png?raw=true"
+        };
+
+        // その他の画像
+        const GAME_IMAGES = {
+            gameOver: "https://github.com/taltalhobby/shiritori-game/blob/main/images/11-kasuga-seal.png?raw=true",
+            clear: "https://pbs.twimg.com/media/GuvWJMjX0AAtZfk.jpg"
+        };
+
+        let clapToggle = false; // 拍手画像切り替え用
+        const preloadedImages = {}; // プリロードした画像を保持
+
+        // 全画像プリロード（ページ読み込み時に実行）
+        function preloadAllImages() {
+            // にぶちゃん画像
+            for (const [key, url] of Object.entries(NIBU_IMAGES)) {
+                const img = new Image();
+                img.src = url;
+                preloadedImages[key] = img;
+            }
+            // ゲームオーバー・クリア画像
+            for (const [key, url] of Object.entries(GAME_IMAGES)) {
+                const img = new Image();
+                img.src = url;
+                preloadedImages[key] = img;
+            }
+        }
+
+        // ページ読み込み時にプリロード
+        window.addEventListener('DOMContentLoaded', preloadAllImages);
+
+        // 画像切り替え（activeクラスの付け替えのみ）
+        function setNibuImage(imageKey) {
+            const container = document.getElementById('nibu-char-container');
+            if (!container) return;
+
+            // 全画像からactiveを外す
+            container.querySelectorAll('.nibu-img').forEach(img => {
+                img.classList.remove('active');
+            });
+
+            // 指定した画像にactiveを付ける
+            const targetImg = container.querySelector(`[data-state="${imageKey}"]`);
+            if (targetImg) {
+                targetImg.classList.add('active');
+            }
+        }
+
+        // バウンス制御（デフォルトは上、裏拍で下に）
+        function setNibuBounce(isDown) {
+            const container = document.getElementById('nibu-char-container');
+            if (!container) return;
+            if (isDown) {
+                container.classList.add('down');
+            } else {
+                container.classList.remove('down');
+            }
+        }
+
+        // ========== Web Audio API ==========
+        let audioCtx = null;
+
+        function initAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        // イントロ用「ポッ」短い単音（A = 440Hz）
+        function playPop() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(440, audioCtx.currentTime); // A4
+
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.08);
+        }
+
+        // イントロ4拍目用「ポーン」長い単音（オクターブ上 A = 880Hz）
+        function playPopHigh() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+
+            gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.25);
+        }
+
+        // セレクト用 コード進行対応和音
+        // サイクル1: A (A, C#, E)
+        // サイクル2: C7 (C, E, G, Bb)
+        // サイクル3: Fmaj7 (F, A, C, E)
+        // サイクル4: 1-2拍目 E7sus4 (E, A, B, D), 3-4拍目 E7 (E, G#, B, D)
+        function playChord() {
+            if (!audioCtx) return;
+
+            const chords = {
+                Aadd9: [110, 494, 554, 659],      // A2(ルート), B4, C#5, E5
+                Cmaj7: [131, 392, 494, 523, 659], // C3(ルート), G4, B4, C5, E5（転回形）
+                Fmaj7: [175, 349, 440, 523, 659], // F3(ルート), F4, A4, C5, E5
+                E7sus4: [165, 440, 494, 587, 659], // E3(ルート), A4, B4, D5, E5（転回形）
+                E7: [165, 415, 494, 587, 659]      // E3(ルート), G#4, B4, D5, E5（転回形）
+            };
+
+            const cycleIndex = cycleCount % 4;
+            let frequencies;
+
+            if (cycleIndex === 0) {
+                frequencies = chords.Aadd9;
+            } else if (cycleIndex === 1) {
+                frequencies = chords.Cmaj7;
+            } else if (cycleIndex === 2) {
+                frequencies = chords.Fmaj7;
+            } else {
+                // サイクル4: 1-2拍目はE7sus4、3-4拍目はE7
+                const beatInMeasure = ((currentBeat - 1) % 4) + 1;
+                frequencies = (beatInMeasure <= 2) ? chords.E7sus4 : chords.E7;
+            }
+
+            frequencies.forEach(freq => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+                gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.12);
+            });
+        }
+
+        // クラップ（2小節目）
+        function playClap() {
+            if (!audioCtx) return;
+            const bufferSize = audioCtx.sampleRate * 0.08;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 3);
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.value = 1200;
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            noise.start();
+        }
+
+        // ピンポン音（正解）「ぴん↑ぽん↓」
+        function playPinpon() {
+            if (!audioCtx) return;
+            // 1音目（高い音）
+            const osc1 = audioCtx.createOscillator();
+            const gain1 = audioCtx.createGain();
+            osc1.connect(gain1);
+            gain1.connect(audioCtx.destination);
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(1100, audioCtx.currentTime);
+            gain1.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+            osc1.start(audioCtx.currentTime);
+            osc1.stop(audioCtx.currentTime + 0.15);
+
+            // 2音目（低い音）
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15);
+            gain2.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain2.gain.setValueAtTime(0.4, audioCtx.currentTime + 0.15);
+            gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+            osc2.start(audioCtx.currentTime + 0.15);
+            osc2.stop(audioCtx.currentTime + 0.35);
+        }
+
+        // ブブー音（不正解）「ぶ→ぶー→」
+        function playBubu() {
+            if (!audioCtx) return;
+            // 1音目
+            const osc1 = audioCtx.createOscillator();
+            const gain1 = audioCtx.createGain();
+            osc1.connect(gain1);
+            gain1.connect(audioCtx.destination);
+            osc1.type = 'sawtooth';
+            osc1.frequency.setValueAtTime(120, audioCtx.currentTime);
+            gain1.gain.setValueAtTime(0.35, audioCtx.currentTime);
+            gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+            osc1.start(audioCtx.currentTime);
+            osc1.stop(audioCtx.currentTime + 0.15);
+
+            // 2音目（長め）
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            osc2.type = 'sawtooth';
+            osc2.frequency.setValueAtTime(100, audioCtx.currentTime + 0.18);
+            gain2.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain2.gain.setValueAtTime(0.35, audioCtx.currentTime + 0.18);
+            gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+            osc2.start(audioCtx.currentTime + 0.18);
+            osc2.stop(audioCtx.currentTime + 0.5);
+        }
+
+        // ゲームオーバー音（Adim - 低め）
+        function playGameOver() {
+            if (!audioCtx) return;
+            // Adim = A, C, Eb（低め）
+            const frequencies = [220, 262, 311]; // A3, C4, Eb4
+
+            frequencies.forEach(freq => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.8);
+            });
+        }
+        function playFanfare() {
+            if (!audioCtx) return;
+
+            // Aメジャー和音のアルペジオ + 最後に華やかなAメジャー7コード
+            const sequence = [
+                { time: 0, freqs: [440] },           // A4
+                { time: 0.12, freqs: [554] },        // C#5
+                { time: 0.24, freqs: [659] },        // E5
+                { time: 0.36, freqs: [880] },        // A5
+                { time: 0.55, freqs: [440, 554, 659, 831, 880] } // Amaj7 + A5（最後の和音）
+            ];
+
+            sequence.forEach(({ time, freqs }) => {
+                freqs.forEach(freq => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + time);
+
+                    const duration = (freqs.length > 1) ? 0.6 : 0.2;
+                    const volume = (freqs.length > 1) ? 0.08 : 0.25;
+
+                    gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(volume, audioCtx.currentTime + time);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + time + duration);
+
+                    osc.start(audioCtx.currentTime + time);
+                    osc.stop(audioCtx.currentTime + time + duration);
+                });
+            });
+        }
+
+        // スタート音「ピロン」
+        function playStartSound() {
+            if (!audioCtx) return;
+
+            const osc1 = audioCtx.createOscillator();
+            const gain1 = audioCtx.createGain();
+            osc1.connect(gain1);
+            gain1.connect(audioCtx.destination);
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+            gain1.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+            osc1.start(audioCtx.currentTime);
+            osc1.stop(audioCtx.currentTime + 0.15);
+
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(1320, audioCtx.currentTime + 0.12); // E6
+            gain2.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain2.gain.setValueAtTime(0.3, audioCtx.currentTime + 0.12);
+            gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+            osc2.start(audioCtx.currentTime + 0.12);
+            osc2.stop(audioCtx.currentTime + 0.35);
+        }
+
+        // ダミー選択肢を表示（UI固定用）
+        function showDummyChoices() {
+            const container = document.getElementById('choices');
+            container.innerHTML = '';
+            for (let i = 0; i < 4; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.innerHTML = '<span class="first-char">&nbsp;</span><span class="rest-chars">&nbsp;&nbsp;&nbsp;</span>';
+                btn.disabled = true;
+                btn.style.visibility = 'hidden';
+                container.appendChild(btn);
+            }
+        }
+
+        // ========== ゲームロジック ==========
+        // しりとりで繋がる文字を返す（選択肢生成・正誤判定用）
+        function getLastChar(word) {
+            let last = word.slice(-1);
+            // 長音の場合は前の文字
+            if (last === "ー") last = word.slice(-2, -1);
+            // 小さい文字は大きい文字に変換
+            const smallToBig = { 'ぁ': 'あ', 'ぃ': 'い', 'ぅ': 'う', 'ぇ': 'え', 'ぉ': 'お', 'ゃ': 'や', 'ゅ': 'ゆ', 'ょ': 'よ', 'っ': 'つ' };
+            return smallToBig[last] || last;
+        }
+
+        // 中央円に表示するHTML
+        // 特殊表示: 長音「ー」と「まっちゃ→ちゃば」コンボのみ
+        function getCenterCharDisplay(word, isSelected = false) {
+            // 「まっちゃ」は選択前は「や」、選択後（ちゃば選択時）は「ちゃ」
+            if (word === "まっちゃ") {
+                if (isSelected) {
+                    return `ち<span class="sub-char">ゃ</span>`;
+                } else {
+                    return "や";
+                }
+            }
+
+            const last = word.slice(-1);
+
+            // 長音で終わる場合: 「た」+小さい「ー」
+            if (last === "ー") {
+                const mainChar = word.slice(-2, -1);
+                return `${mainChar}<span class="sub-char">ー</span>`;
+            }
+
+            // 小さい文字は従来通り大きい文字に変換
+            const smallToBig = { 'ぁ': 'あ', 'ぃ': 'い', 'ぅ': 'う', 'ぇ': 'え', 'ぉ': 'お', 'ゃ': 'や', 'ゅ': 'ゆ', 'ょ': 'よ', 'っ': 'つ' };
+            return smallToBig[last] || last;
+        }
+
+        // 吹き出し左側に表示する「末尾文字を除去した単語」を返す
+        function getWordWithoutLastChar(word) {
+            // 「まっちゃ」は選択前は中央に「や」だけなので1文字除去
+            if (word === "まっちゃ") {
+                return "まっち";
+            }
+            const last = word.slice(-1);
+            // 長音「ー」の場合は「ー」とその前の文字を除去（中央円に2文字表示）
+            if (last === "ー") {
+                return word.slice(0, -2);
+            }
+            // 小さい文字は従来通り1文字除去（中央円は大きい文字で表示）
+            // 通常の文字もそのまま1文字除去
+            return word.slice(0, -1);
+        }
+
+        function generateChoices() {
+            let lastChar = getLastChar(currentWord);
+            let correctPicks = [];
+
+            // コンボチェーンの次の単語があれば優先
+            if (combo[currentWord]) {
+                correctPicks.push(combo[currentWord]);
+            }
+
+            // コンボスターターがあれば追加（まっちゃ、どーなつ、うた、いた等）
+            if (comboStarters[lastChar] && !correctPicks.includes(comboStarters[lastChar])) {
+                correctPicks.push(comboStarters[lastChar]);
+            }
+
+            // 「た」が来たら「たるたるちきん」を1回目から出す
+            if (lastChar === "た" && !correctPicks.includes("たるたるちきん")) {
+                correctPicks.push("たるたるちきん");
+            }
+
+            // 通常の単語から残りを補充（最大2つまで）
+            const targets = [...(wordDict[lastChar] || wordDict["あ"])].sort(() => Math.random() - 0.5);
+            for (let t of targets) {
+                if (correctPicks.length >= 2) break;
+                if (!correctPicks.includes(t)) correctPicks.push(t);
+            }
+
+            // 不正解選択肢を2つ追加
+            const allWords = Object.values(wordDict).flat();
+            let incorrectPicks = [];
+            while (incorrectPicks.length < 2) {
+                const wrong = allWords[Math.floor(Math.random() * allWords.length)];
+                // 正解にならないことを確認
+                const startsWithLastChar = wrong.startsWith(lastChar) ||
+                    (lastChar === "ち" && wrong.startsWith("ちゃ"));
+                const isComboWord = wrong === combo[currentWord] || wrong === comboStarters[lastChar];
+                if (!startsWithLastChar && !isComboWord && !incorrectPicks.includes(wrong) && !correctPicks.includes(wrong)) {
+                    incorrectPicks.push(wrong);
+                }
+            }
+
+            return [...correctPicks, ...incorrectPicks].sort(() => Math.random() - 0.5);
+        }
+
+        function checkAnswer(selected) {
+            const lastChar = getLastChar(currentWord);
+
+            if (selected === "たるたるちきん") {
+                return { correct: true, isGoal: true };
+            }
+
+            let isCorrect = false;
+
+            // コンボチェーンの次の単語として正解
+            if (selected === combo[currentWord]) {
+                isCorrect = true;
+            }
+            // コンボスターターとして正解
+            else if (selected === comboStarters[lastChar]) {
+                isCorrect = true;
+            }
+            // 通常のしりとりとして正解（lastCharで始まる）
+            else if (selected.startsWith(lastChar)) {
+                isCorrect = true;
+            }
+            // 「ち」の場合は「ちゃ」で始まる単語も正解
+            else if (lastChar === "ち" && selected.startsWith("ちゃ")) {
+                isCorrect = true;
+            }
+
+            if (isCorrect && selected.endsWith("ん")) {
+                return { correct: false, isGoal: false };
+            }
+
+            return { correct: isCorrect, isGoal: false };
+        }
+
+        // ========== UI操作 ==========
+        // リズムインジケーターは削除されたため、この関数は空のまま（互換性のため残す）
+        function updateBeatIndicator(beat) {
+            // 廃止: リズムインジケーターは表示しない
+        }
+
+        // しっぽの向きを制御する関数
+        function setTailDirection(direction) {
+            const circle = document.getElementById('next-char');
+            circle.classList.remove('tail-left', 'tail-right');
+            if (direction === 'left') {
+                circle.classList.add('tail-left');
+            } else if (direction === 'right') {
+                circle.classList.add('tail-right');
+            }
+        }
+
+        function updateTimeBar() {
+            const barLeft = document.getElementById('time-bar-left');
+            const barRight = document.getElementById('time-bar-right');
+
+            // 左右から中央へ減少（各バーは50%が最大）
+            const halfWidth = (timeBarWidth / 2);
+            barLeft.style.width = halfWidth + '%';
+            barRight.style.width = halfWidth + '%';
+
+            // 色変更
+            barLeft.classList.remove('warning', 'danger');
+            barRight.classList.remove('warning', 'danger');
+            if (timeBarWidth <= 25) {
+                barLeft.classList.add('danger');
+                barRight.classList.add('danger');
+            } else if (timeBarWidth <= 50) {
+                barLeft.classList.add('warning');
+                barRight.classList.add('warning');
+            }
+        }
+
+        function startTimeBar() {
+            timeBarWidth = 100;
+            updateTimeBar();
+            const decrementPerTick = 100 / (4 * (BEAT_DURATION / 50)); // 1小節で100%減少
+            timeBarInterval = setInterval(() => {
+                if (selectedWord !== null) return; // 選択済みなら停止
+                timeBarWidth = Math.max(0, timeBarWidth - (100 / (4 * (BEAT_DURATION / 50))));
+                updateTimeBar();
+            }, 50);
+        }
+
+        function stopTimeBar() {
+            if (timeBarInterval) {
+                clearInterval(timeBarInterval);
+                timeBarInterval = null;
+            }
+        }
+
+        // 吹き出しに文字をセット（長体で収める）
+        function setSpeechText(elementId, text) {
+            const el = document.getElementById(elementId);
+
+            // 内部にspan要素を作成してテキストを配置
+            const span = document.createElement('span');
+            span.textContent = text;
+            span.style.display = 'inline-block';
+            span.style.whiteSpace = 'nowrap';
+            el.innerHTML = '';
+            el.appendChild(span);
+
+            // 描画後に幅を測定して長体適用
+            requestAnimationFrame(() => {
+                const containerWidth = el.clientWidth - 16; // padding分を引く
+                const textWidth = span.offsetWidth;
+
+                if (textWidth > containerWidth && textWidth > 0) {
+                    const scale = containerWidth / textWidth;
+                    // 最小0.5までの長体
+                    const scaleX = Math.max(0.5, scale);
+                    span.style.transform = `scaleX(${scaleX})`;
+                    // transform-originを配置に合わせる
+                    if (elementId === 'speech-left') {
+                        span.style.transformOrigin = 'right center';
+                    } else {
+                        span.style.transformOrigin = 'left center';
+                    }
+                }
+            });
+        }
+
+        function updateChoices(choices) {
+            const container = document.getElementById('choices');
+            container.innerHTML = '';
+
+            const nextCharDisplay = getCenterCharDisplay(currentWord);
+            document.getElementById('next-char').innerHTML = nextCharDisplay;
+
+            // 左吹き出しに表示する単語（長音・小文字対応）
+            const leftWord = getWordWithoutLastChar(currentWord);
+            setSpeechText('speech-left', leftWord);
+
+            choices.forEach(word => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                const firstChar = word.charAt(0);
+                const restChars = word.slice(1);
+                btn.innerHTML = `<span class="first-char">${firstChar}</span><span class="rest-chars">${restChars}</span>`;
+                btn.onclick = () => selectChoice(word, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function selectChoice(word, btn) {
+            if (!isPlaying || gamePhase !== "select") return;
+            // 既に選択済みなら何もしない
+            if (selectedWord !== null) return;
+
+            document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedWord = word;
+
+            // 選択後は全ボタンを無効化（選び直し防止）
+            document.querySelectorAll('.choice-btn').forEach(b => {
+                b.disabled = true;
+            });
+        }
+
+        function hideChoices() {
+            document.getElementById('choices').innerHTML = '';
+            document.getElementById('next-char').textContent = '';
+        }
+
+        function disableChoices() {
+            document.querySelectorAll('.choice-btn').forEach(btn => {
+                btn.disabled = true;
+            });
+        }
+
+        function pulseCharacter() {
+            const container = document.getElementById('nibu-char-container');
+            if (!container) return;
+            container.classList.remove('pulse');
+            void container.offsetWidth;
+            container.classList.add('pulse');
+        }
+
+        // ========== リズムエンジン（2小節 = 8拍） ==========
+        let BPM = 120;
+        let BEAT_DURATION = 60000 / BPM; // 500ms
+
+        // ホワイトウォッシュ制御
+        function setWhitewash(side) {
+            const left = document.getElementById('speech-left');
+            const right = document.getElementById('speech-right');
+            left.classList.remove('whitewash');
+            right.classList.remove('whitewash');
+            if (side === 'right') {
+                right.classList.add('whitewash');
+            } else if (side === 'left') {
+                left.classList.add('whitewash');
+            }
+        }
+
+        function startRhythm() {
+            currentBeat = 0;
+            nextBeat();
+        }
+
+        function nextBeat() {
+            if (!isPlaying) return;
+
+            currentBeat = (currentBeat % 8) + 1;
+            updateBeatIndicator(currentBeat);
+
+            if (gamePhase === "intro") {
+                // イントロ: 0-1～0-4 最初の単語のみ
+                // 1ターン目のイントロ〜selectフェーズ終了まではしっぽは左（提示人側）
+                setTailDirection('left');
+                setWhitewash('right'); // 右側をホワイトウォッシュ
+                setNibuImage('waiting'); // 待機画像
+
+                // カウントダウンテロップを表示
+                const countdownEl = document.getElementById('countdown-overlay');
+                const countdownTexts = { 1: '3', 2: '2', 3: '1', 4: 'GO!' };
+                countdownEl.textContent = countdownTexts[currentBeat];
+                countdownEl.classList.remove('show');
+                void countdownEl.offsetWidth; // アニメーションリセット
+                countdownEl.classList.add('show');
+
+                if (currentBeat === 4) {
+                    playPopHigh(); // 4拍目は「ポーン」
+                    // GO!を少し長く表示してから消す
+                    setTimeout(() => {
+                        countdownEl.classList.remove('show');
+                    }, BEAT_DURATION * 0.8);
+                } else {
+                    playPop(); // 1-3拍目は「ポッ」
+                }
+            } else if (gamePhase === "select") {
+                // 1小節目: 選択肢選択 (拍1～4)
+                setWhitewash('right'); // 右側をホワイトウォッシュ
+                // 1ターン目はしっぽを左に保持、2ターン目以降は右
+                if (isFirstTurn) {
+                    setTailDirection('left');
+                } else {
+                    setTailDirection('right');
+                }
+                if ((currentBeat === 1 || currentBeat === 5) && !choicesShown) {
+                    // 選択フェーズの開始（1-1）
+                    // ターン表示を更新
+                    document.getElementById('score').textContent = score;
+                    // 右吹き出しをクリア（1-1からは空欄、2-4終わりまでは前のターンの回答が表示されていた）
+                    document.getElementById('speech-right').textContent = '';
+                    updateChoices(generateChoices());
+                    startTimeBar();
+                    selectedWord = null;
+                    choicesShown = true;
+                    // マークを非表示
+                    document.getElementById('judgment-mark').className = 'judgment-mark';
+                }
+                setNibuImage('request'); // リクエスト画像
+                // 表拍で下、0.5拍後に上（デフォルト）に戻る
+                setNibuBounce(true); // 下位置
+                setTimeout(() => {
+                    if (gamePhase === 'select' && isPlaying) {
+                        setNibuBounce(false); // 上位置（デフォルト）
+                    }
+                }, BEAT_DURATION / 2);
+                playChord(); // Aコード和音
+            } else if (gamePhase === "answer") {
+                // 2小節目: 回答・合否 (拍5～8 または 拍1～4でanswerフェーズなら)
+                // 2-1からはしっぽを右（にぶちゃん側）に向ける
+                setTailDirection('right');
+                setWhitewash('left'); // 左側をホワイトウォッシュ
+                playClap();
+                // 2-1、2-2のアニメーション
+                if (currentBeat === 1 || currentBeat === 2 || currentBeat === 5 || currentBeat === 6) {
+                    if (selectedWord) {
+                        // 回答がある場合：拍手画像を表拍/裏拍で切り替え
+                        setNibuImage('clap1');
+                        setTimeout(() => {
+                            if (gamePhase === 'answer' && isPlaying) {
+                                setNibuImage('clap2');
+                            }
+                        }, BEAT_DURATION / 2);
+                    } else {
+                        // 回答がない場合：requestイメージとバウンスを継続
+                        setNibuImage('request');
+                        setNibuBounce(true); // 下位置
+                        setTimeout(() => {
+                            if (gamePhase === 'answer' && isPlaying) {
+                                setNibuBounce(false); // 上位置
+                            }
+                        }, BEAT_DURATION / 2);
+                    }
+                }
+                if (currentBeat === 1 || currentBeat === 5) {
+                    // 2-1: にぶちゃんが回答
+                    processAnswer();
+                }
+                if (currentBeat === 3 || currentBeat === 7) {
+                    // 2-3: 合否発表
+                    showJudgment();
+                }
+                if (currentBeat === 4 || currentBeat === 8) {
+                    // 2-4終了、次のサイクルまたは終了
+                    if (pendingResult) {
+                        handlePendingResult();
+                    } else {
+                        gamePhase = "select";
+                    }
+                }
+            }
+
+            // フェーズ遷移ロジック
+            // イントロ拍4終了後 → select開始
+            if (gamePhase === "intro" && currentBeat === 4) {
+                setTimeout(() => {
+                    if (isPlaying && gamePhase === "intro") {
+                        gamePhase = "select";
+                    }
+                }, BEAT_DURATION - 10);
+            }
+
+            // select拍4終了後 → answer開始（choicesShownがtrueの時のみ）
+            if (gamePhase === "select" && choicesShown && (currentBeat === 4 || currentBeat === 8)) {
+                setTimeout(() => {
+                    if (isPlaying && gamePhase === "select") {
+                        gamePhase = "answer";
+                        choicesShown = false;
+                        stopTimeBar();
+                        disableChoices();
+                    }
+                }, BEAT_DURATION - 10);
+            }
+
+            if (isPlaying) {
+                beatInterval = setTimeout(nextBeat, BEAT_DURATION);
+            }
+        }
+
+        let pendingResult = null;
+
+        function processAnswer() {
+            if (!selectedWord) {
+                // タイムアウト時はにぶちゃん側に表示
+                document.getElementById('speech-right').textContent = '...？';
+                pendingResult = { type: 'timeout' };
+                return;
+            }
+
+            // 「まっちゃ」→「ちゃば」の場合の特殊処理
+            if (currentWord === "まっちゃ" && selectedWord === "ちゃば") {
+                // 中央円を「ちゃ」に更新
+                document.getElementById('next-char').innerHTML = getCenterCharDisplay("まっちゃ", true);
+                // 左吹き出しを「まっ」に更新
+                setSpeechText('speech-left', 'まっ');
+                // 右吹き出しは「ば！」
+                setSpeechText('speech-right', 'ば！');
+            } else {
+                // にぶちゃんの回答を右側の吹き出しに表示（頭文字は中央円にあるので除外）
+                const displayWord = selectedWord.slice(1) + '！';
+                setSpeechText('speech-right', displayWord);
+            }
+            pulseCharacter();
+
+            const result = checkAnswer(selectedWord);
+            pendingResult = result;
+        }
+
+        function showJudgment() {
+            if (!pendingResult) return;
+
+            const mark = document.getElementById('judgment-mark');
+
+            if (pendingResult.type === 'timeout') {
+                playBubu();
+                mark.textContent = '✕';
+                mark.className = 'judgment-mark wrong show';
+                setNibuImage('fail'); // 失敗画像
+            } else if (pendingResult.isGoal) {
+                playPinpon(); // 2-3では正解音
+                mark.textContent = '◯';
+                mark.className = 'judgment-mark correct show';
+                setNibuImage('goal'); // タルタルチキン画像
+            } else if (pendingResult.correct) {
+                playPinpon();
+                mark.textContent = '◯';
+                mark.className = 'judgment-mark correct show';
+                score++;
+                // 表示更新は1-1で行うため、ここでは行わない
+                currentWord = selectedWord;
+                selectedWord = null;
+                setNibuImage('correct'); // 正解画像
+            } else {
+                playBubu();
+                mark.textContent = '✕';
+                mark.className = 'judgment-mark wrong show';
+                setNibuImage('fail'); // 失敗画像
+            }
+        }
+
+        function handlePendingResult() {
+            if (!pendingResult) return;
+
+            if (pendingResult.type === 'timeout') {
+                pendingResult = null;
+                setTimeout(() => endGame(false), BEAT_DURATION);
+            } else if (pendingResult.isGoal) {
+                pendingResult = null;
+                setTimeout(() => endGame(true), BEAT_DURATION);
+            } else if (pendingResult.correct) {
+                // 正解：次のサイクルへ
+                pendingResult = null;
+                gamePhase = "select";
+                cycleCount++; // コード進行を進める
+                isFirstTurn = false; // 2ターン目以降はしっぽが右向きになる
+                // 右吹き出しはnextBeatで新しいターン開始時にクリアされる
+            } else {
+                // 不正解
+                pendingResult = null;
+                setTimeout(() => endGame(false), BEAT_DURATION);
+            }
+        }
+
+        // ========== ゲーム開始・終了 ==========
+        function startGame(bpm) {
+            initAudio();
+
+            // スタート音「ピロン」
+            playStartSound();
+
+            // テンポ設定（引数から受け取り）
+            BPM = bpm || 120;
+            BEAT_DURATION = 60000 / BPM;
+
+            const allWords = Object.values(wordDict).flat().filter(w => !w.endsWith('ん'));
+            currentWord = allWords[Math.floor(Math.random() * allWords.length)];
+
+            score = 1;
+            taVisitCount = 0;
+            selectedWord = null;
+            isPlaying = true;
+            gamePhase = "intro";
+            pendingResult = null;
+            cycleCount = 0; // コード進行リセット
+            isFirstTurn = true; // 1ターン目のフラグをリセット
+
+            document.getElementById('title-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'flex';
+
+            document.getElementById('score').textContent = '1';
+            // 最初の単語を提示人側（左）に表示（長音・小文字対応）
+            const nextCharDisplay = getCenterCharDisplay(currentWord);
+            const leftWord = getWordWithoutLastChar(currentWord);
+            setSpeechText('speech-left', leftWord);
+            document.getElementById('speech-right').textContent = '';
+            document.getElementById('next-char').innerHTML = nextCharDisplay;
+            // ダミー選択肢を4つ表示（0-1からUIを固定するため）
+            showDummyChoices();
+            // 時間バーをリセット
+            document.getElementById('time-bar-left').style.width = '50%';
+            document.getElementById('time-bar-right').style.width = '50%';
+            // しっぽを左（提示人側）に向ける
+            setTailDirection('left');
+            // 右側をホワイトウォッシュ（スタート時から）
+            setWhitewash('right');
+
+            // 1秒の準備時間後にゲーム開始
+            setTimeout(() => {
+                startRhythm();
+            }, 1000);
+        }
+
+        function endGame(isWin) {
+            isPlaying = false;
+            if (beatInterval) clearTimeout(beatInterval);
+            stopTimeBar();
+
+            const overlay = document.getElementById('result-overlay');
+            const content = document.getElementById('result-content');
+
+            if (isWin) {
+                playFanfare(); // クリア画面でファンファーレ
+                content.innerHTML = `
+                <img src="${GAME_IMAGES.clear}" class="result-img">
+                <div class="result-emoji">🎉</div>
+                <div class="result-text win">タルタルチキン！</div>
+                <div class="result-score">ターン: ${score}</div>
+            `;
+            } else {
+                playGameOver(); // ゲームオーバー音（Adim）
+                content.innerHTML = `
+                <img src="${GAME_IMAGES.gameOver}" class="result-img">
+                <div class="result-text lose">Game Over</div>
+                <div class="result-score">ターン: ${score}</div>
+            `;
+            }
+
+            overlay.style.display = 'flex';
+        }
+
+        function goToTitle() {
+            isPlaying = false;
+            if (beatInterval) clearTimeout(beatInterval);
+            stopTimeBar();
+
+            // ゲーム状態をリセット
+            choicesShown = false;
+            pendingResult = null;
+            selectedWord = null;
+            gamePhase = "intro";
+            currentBeat = 0;
+            cycleCount = 0;
+            isFirstTurn = true; // 1ターン目フラグをリセット
+
+            // UI要素をリセット
+            const barLeft = document.getElementById('time-bar-left');
+            const barRight = document.getElementById('time-bar-right');
+            barLeft.style.width = '50%';
+            barRight.style.width = '50%';
+            barLeft.classList.remove('warning', 'danger');
+            barRight.classList.remove('warning', 'danger');
+
+            document.getElementById('speech-left').textContent = '';
+            document.getElementById('speech-right').textContent = '';
+            document.getElementById('choices').innerHTML = '';
+            document.getElementById('next-char').textContent = '';
+            document.getElementById('judgment-mark').className = 'judgment-mark';
+            document.getElementById('countdown-overlay').classList.remove('show');
+
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('result-overlay').style.display = 'none';
+            document.getElementById('title-screen').style.display = 'flex';
+        }
+    </script>
+
+</body>
+
+</html>
